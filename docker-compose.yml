@@ -1,0 +1,54 @@
+version: '3'
+
+services:
+  api:
+    build: .
+    image: ledn:latest
+    volumes:
+      - ./:/usr/src/ledn
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mongo
+      - redis
+    env_file:
+      - .env
+    networks:
+      - backend
+
+  mongo:
+    image: mongo:4.4
+    hostname: mongodb
+    restart: always
+    command: mongod --auth
+    env_file:
+      - .env
+    volumes:
+      - mongodbdata:/data/db
+    ports:
+      - "27017:27017"
+    networks:
+      - backend
+
+  mongo-seed:
+    env_file:
+      - .env
+    build:
+      context: ./mongo_seed
+      dockerfile: Dockerfile
+      args:
+        - DATABASE_URI=$DATABASE_URI
+        - USERNAME=$MONGO_INITDB_ROOT_USERNAME
+        - PASSWORD=$MONGO_INITDB_ROOT_PASSWORD
+    depends_on:
+      - mongo
+    networks:
+      - backend
+
+networks:
+  backend:
+    driver: bridge
+
+volumes:
+  mongodbdata:
+    driver: local
